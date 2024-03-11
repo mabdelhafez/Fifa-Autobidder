@@ -24,6 +24,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 import configparser
 
 from helpers import getFilters, log_event
+import traceback
 
 
 class Autobidder:
@@ -96,8 +97,27 @@ class Autobidder:
             self.fetch_player_data()
 
         else:
-            self.driver.switch_to.window(self.driver.window_handles[0])
+            print("driver window handles in autobidder before close")
+            
+            print(self.driver.window_handles)
+            print(self.driver.current_window_handle)
+            print(self.driver.title)
+            
+            title = self.driver.title
+            print("title: " + title)
+            # get windows
+            open_windows = self.driver.window_handles
 
+            for w in open_windows:
+                self.driver.switch_to.window(w)
+                if title != self.driver.title:
+                    self.driver.close()
+            print("driver window handles in autobidder after close")
+            self.driver.switch_to.window(self.driver.window_handles[0])
+            print(self.driver.window_handles)
+            print(self.driver.current_window_handle)
+            print(self.driver.title)
+            
             state = self.checkState()
             self.update_autobidder_logs()
 
@@ -118,6 +138,7 @@ class Autobidder:
                                 self.enterFilters()
 
                             self.bidround_number = x
+                            
                             self.getFutbinList(
                                 str(self.config["Other"]["futbin_url"]))
                             if (self.botRunning):
@@ -164,6 +185,7 @@ class Autobidder:
                 self.log_event(self.queue, "Bot stopped", eventData)
 
     def bid(self):
+        print("bid()")
         self.wait_for_visibility(
             "/html/body/main/section/section/div[2]/div/div/section[1]/div/ul/li[1]")
         players_to_use = self.getTargetListIDS()
@@ -314,12 +336,14 @@ class Autobidder:
             elif (no_manual_user_intervention):
                 sleep(3)
                 players = self.getAllPlayerInfo2()  # Re-load player list and cycle through them
+                print("Got players: " + str(len(players)))
                 num_eligible = 0
                 refresh = False
                 for p in players:
-                    # print(p)
+                    #print(p)
                     if refresh == False:
                         id = int(p[16])
+                        #print("id is " + str(id))
                         if (id in players_to_use):
                             if ("expired" not in p[2]) and ("highest-bid" not in p[2]) and ("selected" not in p[2]):
                                 if p[8] > 10:  # time is greater than 10 secs
@@ -434,13 +458,15 @@ class Autobidder:
         #  FIRST Clear sold - first time
         if players_sold > 0:
             try:
+                print("first clear sold")
                 self.clearSold()
+                print("finished first clear sold")
                 self.user_transferlist_sold += players_sold
                 self.players_sold_this_round += players_sold
                 self.update_autobidder_logs()
                 players_sold = 0  # reassign players_sold
-            except Exception as e:
-                print(e)
+            except Exception:
+                traceback.print_exc()
                 log_event(self.queue, "clear sold error")
 
         wait_for_shield_invisibility(self.driver)
@@ -465,7 +491,7 @@ class Autobidder:
                         "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]")
                     try:
                         self.clickButton(
-                            '/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div')  # click player
+                            '/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]')  # click player
                         wait_for_shield_invisibility(self.driver)
                         # click re-list
                         self.clickButton(
@@ -487,11 +513,10 @@ class Autobidder:
                                 "/html/body/main/section/section/div[2]/div/div/section/div/div/div[2]/div[2]/div[2]/div[3]/div[2]/button[1]")
 
                         wait_for_shield_invisibility(self.driver)
-
                         rating = self.getText(
-                            "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div/div[1]/div[1]/div[5]/div[2]/div[1]")
+                            "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div/div[1]/div[1]/div[4]/div[2]/div[1]")
                         position = self.getText(
-                            "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div/div[1]/div[1]/div[5]/div[2]/div[2]")
+                            "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div/div[1]/div[1]/div[4]/div[2]/div[2]")
                         name = self.getText(
                             "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div/div[1]/div[2]")
                         pace = self.getText(
@@ -508,11 +533,11 @@ class Autobidder:
                             "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div/div[1]/div[3]/ul/li[6]/span[2]")
 
                         nation = self.getText(
-                            "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div/div[1]/div[1]/div[8]/div[1]/span[2]")
+                            "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div/div[1]/div[1]/div[7]/div[2]/span[1]")
                         league = self.getText(
-                            "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div/div[1]/div[1]/div[8]/div[2]/span[2]")
+                            "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div/div[1]/div[1]/div[7]/div[3]/span[1]")
                         team = self.getText(
-                            "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div/div[1]/div[1]/div[8]/div[3]/span[2]")
+                            "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li[1]/div/div[1]/div[1]/div[7]/div[4]/span[1]")
 
                         player_data = [rating, pace, shooting,
                                        passing, dribbling, defending, physical]
@@ -524,10 +549,10 @@ class Autobidder:
 
                         self.scrollIntoView(
                             "/html/body/main/section/section/div[2]/div/div/section/div/div/div[2]/div[2]/div[2]/button")
+
                         relist_price = int(self.getInputBoxText(
                             "/html/body/main/section/section/div[2]/div/div/section/div/div/div[2]/div[2]/div[2]/div[3]/div[2]/input"))
-                        self.clickButton(
-                            "/html/body/main/section/section/div[2]/div/div/section/div/div/div[2]/div[2]/div[2]/button")  # List player
+                        self.clickButton(                            "/html/body/main/section/section/div[2]/div/div/section/div/div/div[2]/div[2]/div[2]/button")  # List player
 
                         text = "RELIST PID: " + str(unique_player_id) + " NAME: " + str(
                             name) + " RELISTPRICE: " + str(relist_price) + " POSITION: " + str(position)
@@ -541,8 +566,8 @@ class Autobidder:
                         self.user_projected_profit -= (0.95*50)
                         self.update_autobidder_logs()
                         # self.sleep_approx(3)
-                    except Exception as e:
-                        print(e)
+                    except Exception:
+                        traceback.print_exc()
                         exception_counter += 1
                         if exception_counter > 5:
                             status = False
@@ -606,9 +631,9 @@ class Autobidder:
                             boughtprice = self.getText(
                                 "/html/body/main/section/section/div[2]/div/div/section/div/div/div[2]/div[1]/div[2]/div/span[2]")
                             rating = int(self.getText(
-                                "/html/body/main/section/section/div[2]/div/div/section/div/div/div[1]/div/div[2]/div/div/div[1]/div/div[7]/div[2]/div[1]"))
+                                "/html/body/main/section/section/div[2]/div/div/section/div/div/div[1]/div/div[2]/div/div/div[1]/div/div[5]/div[2]/div[1]"))
                             position = self.getText(
-                                "/html/body/main/section/section/div[2]/div/div/section/div/div/div[1]/div/div[2]/div/div/div[1]/div/div[7]/div[2]/div[2]")
+                                "/html/body/main/section/section/div[2]/div/div/section/div/div/div[1]/div/div[2]/div/div/div[1]/div/div[5]/div[2]/div[2]")
 
                             if "," in boughtprice:
                                 boughtprice = boughtprice.replace(",", "")
@@ -646,7 +671,7 @@ class Autobidder:
                             playerTeam = str(self.getText(
                                 "/html/body/main/section/section/div[2]/div/div/div/section[3]/ul/li[1]/div/div[1]/div[1]/div[8]/div[3]/span[2]"))
 
-                            # Show player listing
+                            # Click list on TM
                             self.clickButton(
                                 '/html/body/main/section/section/div[2]/div/div/section/div/div/div[2]/div[2]/div[1]/button')
 
@@ -660,9 +685,9 @@ class Autobidder:
                                 break
 
                             self.send_keys_and_more(
-                                '/html/body/main/section/section/div[2]/div/div/section/div/div/div[2]/div[2]/div[2]/div[2]/div[2]/input', startBid)  # Start bid
+                               '/html/body/main/section/section/div[2]/div/div/section/div/div/div[2]/div[2]/div[2]/div[2]/div[2]/input', startBid)  # Start bid
                             self.send_keys_and_more(
-                                '/html/body/main/section/section/div[2]/div/div/section/div/div/div[2]/div[2]/div[2]/div[3]/div[2]/input', playerPrice)  # Buy now
+                               '/html/body/main/section/section/div[2]/div/div/section/div/div/div[2]/div[2]/div[2]/div[3]/div[2]/input', playerPrice)  # Buy now
                             self.clickButton(
                                 '/html/body/main/section/section/div[2]/div/div/section/div/div/div[2]/div[2]/div[2]/button')  # List player
                             projected_profit += est_profit
@@ -685,10 +710,11 @@ class Autobidder:
                         except Exception as e:
                             unlistedPlayers = False
                             status = False
+                            traceback.print_exc()
 
             except Exception as e:
                 log_event(self.queue, "error in listing players: ")
-                print(e)
+                traceback.print_exc()
                 exception_counter += 1
                 if exception_counter > 3:
                     log_event(
@@ -742,7 +768,7 @@ class Autobidder:
         self.send_keys_and_more(
             "/html/body/main/section/section/div[2]/div/div[2]/div/div[1]/div[2]/div[5]/div[2]/input", "4900")
         self.send_keys_and_more(
-            "/html/body/main/section/section/div[2]/div/div[2]/div/div[1]/div[2]/div[6]/div[2]/input", "5000")
+            "/html/body/main/section/section/div[2]/div/div[2]/div/div[1]/div[2]/div[6]/div[2]/input", "10000")
 
         webapp_filters_output = getFilters(
             str(self.config["Other"]["futbin_url"]))
@@ -817,9 +843,9 @@ class Autobidder:
 
     def goNextPage(self):
         try:
-            self.driver.find_element_by_xpath(
+            self.driver.find_element(By.XPATH,
                 '/html/body/main/section/section/div[2]/div/div/section[1]/div/div/button[2]')
-            self.driver.find_element_by_xpath(
+            self.driver.find_element(By.XPATH,
                 '/html/body/main/section/section/div[2]/div/div/section[1]/div/div/button[2]').click()
             self.sleep_approx(0.5)
             self.wait_for_visibility(
@@ -836,8 +862,10 @@ class Autobidder:
             price = playerdata[4]
         elif playerdata[5].isdigit() or playerdata[5].endswith("K") or playerdata[5].endswith("M"):
             price = playerdata[5]
-        else:
+        elif playerdata[6].isdigit() or playerdata[6].endswith("K") or playerdata[6].endswith("M"):
             price = playerdata[6]
+        else:
+            price = '0'
 
         if "%" in price:
             price = playerdata[5]
@@ -886,9 +914,9 @@ class Autobidder:
                 name = card_details[0].strip("\n")
                 rating = card_details[1]
                 position = card_details[2]
-
+                print(card_details)
                 p = player_stats.split(" ")
-                # print(p)
+                print(p)
                 pace = p[-6]
                 shooting = p[-5]
                 passing = p[-4]
@@ -951,7 +979,7 @@ class Autobidder:
 
     def acceptCookies(self):
         if not self.cookies_accepted:
-            buttons = self.driver.find_elements_by_xpath(
+            buttons = self.driver.find_elements(By.XPATH,
                 "//*[contains(text(), 'Got it!')]")
             for btn in buttons:
                 try:
@@ -971,7 +999,7 @@ class Autobidder:
         self.driver.execute_script("window.open('');")
         self.driver.switch_to.window(self.driver.window_handles[1])
         self.driver.get(url)
-
+        print("Called get url: " + url)
         sleep(7)
         self.driver.execute_script("return window.stop")
 
@@ -1034,13 +1062,13 @@ class Autobidder:
         actions.perform()
         self.sleep_approx(1)
 
-        hidden_submenu_ps = self.driver.find_element_by_xpath(
+        hidden_submenu_ps = self.driver.find_element(By.XPATH,
             "/html/body/div[8]/div/div[2]/div/div[2]/div[1]/button[1]")
         # "/html/body/header/nav/div/div/ul[2]/li[4]/div/ul/li[1]/a"
-        hidden_submenu_xbox = self.driver.find_element_by_xpath(
+        hidden_submenu_xbox = self.driver.find_element(By.XPATH,
             "/html/body/div[8]/div/div[2]/div/div[2]/div[1]/button[2]")
         # "/html/body/header/nav/div/div/ul[2]/li[4]/div/ul/li[2]/a"
-        hidden_submenu_pc = self.driver.find_element_by_xpath(
+        hidden_submenu_pc = self.driver.find_element(By.XPATH,
             "/html/body/div[8]/div/div[2]/div/div[2]/div[1]/button[3]")
         # "/html/body/header/nav/div/div/ul[2]/li[4]/div/ul/li[3]/a"
 
@@ -1116,18 +1144,19 @@ class Autobidder:
         self.sleep_approx(1)
         try:
             playersOnPage = self.driver.find_elements(
-                By.TAG_NAME, "li.listFUTItem")
+                By.XPATH, "/html/body/main/section/section/div[2]/div/div/div/section[4]/ul/li")
 
+            print("clearing expired, number of players in watch list:" + str(len(playersOnPage)))
             num_players_expired = 0
             for player in playersOnPage:
                 try:
                     bidStatus = player.get_attribute("class")
                     bidStatus = str(bidStatus)
-                    if "expired" in bidStatus:
+                    if True:
                         num_players_expired += 1
 
                         cardinfo = player.text.splitlines()
-                        # print(cardinfo)
+                        print(cardinfo)
 
                         rating, name, startprice, curbid_or_finalsoldprice, buynow, time = cardinfo[
                             0], cardinfo[2], cardinfo[16], cardinfo[18], cardinfo[20], cardinfo[22]
@@ -1167,9 +1196,9 @@ class Autobidder:
                         eventData = [unique_player_id, curbid_or_finalsoldprice, rating,
                                      name, position, playerNation, playerLeague, playerTeam]
                         self.log_event(self.queue, text, eventData)
-                except Exception as e:
-                    print(e)
-
+                except Exception:
+                    traceback.print_exc()
+                    
             if num_players_expired > 0:
                 clearExpired = self.driver.find_element(
                     By.XPATH, "/html/body/main/section/section/div[2]/div/div/div/section[4]/header/button")
@@ -1182,7 +1211,8 @@ class Autobidder:
                 self.sleep_approx(1)
         except Exception as e:
             try:
-                print(e)
+                traceback.print_exc()
+                
                 clearExpired = self.driver.find_element(
                     By.XPATH, "/html/body/main/section/section/div[2]/div/div/div/section[4]/header/button")
                 self.driver.execute_script(
@@ -1216,7 +1246,7 @@ class Autobidder:
         """
         self.sleep_approx(1)
         playersOnPage = self.driver.find_elements(
-            By.TAG_NAME, "li.listFUTItem")
+            By.XPATH, "/html/body/main/section/section/div[2]/div/div/div/section[1]/ul/li")
 
         num_players_sold = 0
         all_event_data = []
@@ -1224,7 +1254,7 @@ class Autobidder:
             bidStatus = player.get_attribute("class")
             bidStatus = str(bidStatus)
 
-            if "won" in bidStatus:
+            if True:
                 num_players_sold += 1
                 nation = self.getText("/html/body/main/section/section/div[2]/div/div/div/section[1]/ul/li[" + str(
                     num_players_sold) + "]/div/div[1]/div[1]/div[8]/div[1]/span[2]")
@@ -1280,7 +1310,7 @@ class Autobidder:
                 "/html/body/main/section/section/div[2]/div/div/div/section[1]/header/button")
         except Exception as e:
             print("new clear sold method broke error msg is: ")
-            print(e)
+            traceback.print_exc()
             print(
                 "retrying click clear sold - maybe add WAIT FOR PLAYER SHIELD INVISIBILTIY befoer clickbutton")
 
@@ -1333,7 +1363,7 @@ class Autobidder:
             True or False
         """
         try:
-            self.driver.find_element_by_xpath(xpath)
+            self.driver.find_element(By.XPATH, xpath)
         except NoSuchElementException:
             return False
         return True
@@ -1483,7 +1513,11 @@ class Autobidder:
         for aline in txt:
             player = aline.strip("\n").split(",")
             player_id = int(player[11])
-            dataset.append(player_id)
+            #remove duplicates
+            if player_id in dataset:
+                dataset.remove(player_id)
+            else:
+                dataset.append(player_id)
 
         return dataset
 
@@ -1523,17 +1557,23 @@ class Autobidder:
         status = self.checkState("transfermarket")
         if status:
             players_on_page = self.driver.find_elements(
-                By.TAG_NAME, "li.listFUTItem")
+                By.XPATH, "/html/body/main/section/section/div[2]/div/div/section[1]/div/ul/li")
 
             playerdata = []
             playernumber = 1
             for card in players_on_page:
                 bidstatus = card.get_attribute("class")
                 cardinfo = card.text.splitlines()
-                # print(cardinfo)
+                #print(cardinfo)
 
-                rating, name, startprice, curbid_or_finalsoldprice, buynow, time = cardinfo[
-                    0], cardinfo[2], cardinfo[16], cardinfo[18], cardinfo[20], cardinfo[22]
+                try:
+                    rating, name, startprice, curbid_or_finalsoldprice, buynow, time = cardinfo[
+                        0], cardinfo[2], cardinfo[16], cardinfo[18], cardinfo[20], cardinfo[22]
+                except:
+                    print("exception processing card")
+                    traceback.print_exc()
+                    print(cardInfo)
+                    print(len(cardInfo))
                 position = cardinfo[1]
                 pace = int(cardinfo[4])
                 shooting = int(cardinfo[6])
@@ -1615,17 +1655,17 @@ class Autobidder:
                 playernumber) + "]"
             player = self.driver.find_element(By.XPATH, loc)
             status = str(player.get_attribute("class"))
-            # print(status)
+            print("Player bid status" + str(status))
             return status
 
     def makebid_individualplayer2(self, playernumber, bid_to_make):
+        print("makebid_individualplayer2 (bid_to_make: " + str(bid_to_make) + " for playernum: " + str(playernumber))
         status = self.checkState("transfermarket")
         if status:
             # Click player
             playerbutton = "/html/body/main/section/section/div[2]/div/div/section[1]/div/ul/li[" + str(
                 playernumber) + "]/div"
             self.clickButton(playerbutton)
-
             # get current bid before bidding
             self.wait_for_visibility(
                 "/html/body/main/section/section/div[2]/div/div/section[2]/div/div/div[2]/div[1]/div/div[2]/span[2]")
@@ -1641,7 +1681,7 @@ class Autobidder:
 
             if (original_currentbid == after_currentbid):
                 # get number in text box
-                bidinputbox = self.driver.find_element_by_xpath(
+                bidinputbox = self.driver.find_element(By.XPATH,
                     "/html/body/main/section/section/div[2]/div/div/section[2]/div/div/div[2]/div[2]/div/input")
                 bidinput = str(bidinputbox.get_attribute("value"))
 
@@ -1662,7 +1702,7 @@ class Autobidder:
                         status = self.getPlayerBidstatus(playernumber)
 
                         if "outbid" in status:
-                            # print("BID NO WORK CLICKing UNWATCH ")
+                            print("BID NO WORK CLICKing UNWATCH ")
                             self.sleep_approx(1.5)
                             self.wait_for_visibility(
                                 "/html/body/main/section/section/div[2]/div/div/section[1]/div/ul/li[1]")
@@ -1670,9 +1710,9 @@ class Autobidder:
                                 # unwatch button:
                                 self.clickButton(
                                     "/html/body/main/section/section/div[2]/div/div/section[2]/div/div/div[2]/div[1]/div/div[3]/button")
-                                self.driver.find_element_by_xpath(
+                                self.driver.find_element(By.XPATH,
                                     '/html/body/main/section/section/div[2]/div/div/section[1]/div/div/button[2]')
-                                self.driver.find_element_by_xpath(
+                                self.driver.find_element(By.XPATH,
                                     '/html/body/main/section/section/div[2]/div/div/section[1]/div/div/button[2]').click()
                                 self.requests_made_this_round += 1
                                 self.user_requests_made += 1
@@ -1689,8 +1729,8 @@ class Autobidder:
                         else:
                             print("Status wasn't updated in time")
                             print("status was: " + str(status))
-                            # self.driver.find_element_by_xpath('/html/body/main/section/section/div[2]/div/div/section[1]/div/div/button[2]')
-                            # self.driver.find_element_by_xpath('/html/body/main/section/section/div[2]/div/div/section[1]/div/div/button[2]').click()
+                            # self.driver.find_element(By.XPATH,'/html/body/main/section/section/div[2]/div/div/section[1]/div/div/button[2]')
+                            # self.driver.find_element(By.XPATH,'/html/body/main/section/section/div[2]/div/div/section[1]/div/div/button[2]').click()
                             # self.botRunning = False
                             self.requests_made_this_round += 1
                             self.user_requests_made += 1
@@ -1749,7 +1789,7 @@ class Autobidder:
             return False
 
     def getInputBoxText(self, xpath):
-        inputbox = self.driver.find_element_by_xpath(xpath)
+        inputbox = self.driver.find_element(By.XPATH,xpath)
         bidinput = str(inputbox.get_attribute("value"))
 
         if "," in bidinput:
@@ -1952,34 +1992,19 @@ class Autobidder:
     def getWatchlistInfo(self):
         infiniteloopcounter = 0
         page = self.checkState("watchlist")
+        print("checking watch list")
         if page:
             try:
-                players_on_page = self.driver.find_elements(
-                    By.TAG_NAME, "li.listFUTItem")
-
+                players_won_on_page = self.driver.find_elements(
+                    By.XPATH, "/html/body/main/section/section/div[2]/div/div/div/section[3]/ul/li")
+                players_expired_on_page = self.driver.find_elements(
+                    By.XPATH, "/html/body/main/section/section/div[2]/div/div/div/section[4]/ul/li")
                 playerdata = []
                 playernumber = 1
-                players_won = 0
-                players_expired = 0
+                players_won = len(players_won_on_page)
+                players_expired = len(players_expired_on_page)
 
-                for card in players_on_page:
-                    # Only look at top 5 players
-                    bidstatus = card.get_attribute("class")
-                    cardinfo = card.text.splitlines()
-                    # print(cardinfo)
-
-                    rating = cardinfo[0]
-                    name = cardinfo[2]
-                    startprice = cardinfo[16]
-                    curbid_or_finalsoldprice = cardinfo[18]
-                    buynow = cardinfo[20]
-                    time = cardinfo[22]
-
-                    if "won" in bidstatus:
-                        players_won += 1
-                    if "expired" in bidstatus:
-                        players_expired += 1
-
+                
                 # self.user_players_won += players_won
                 self.user_watchlist_outbid += players_expired
 
@@ -2006,31 +2031,16 @@ class Autobidder:
         if state:
             infiniteloopcounter = 0
             try:
-                players_on_page = self.driver.find_elements(
-                    By.TAG_NAME, "li.listFUTItem")
+                players_sold_items = self.driver.find_elements(
+                    By.XPATH, "/html/body/main/section/section/div[2]/div/div/div/section[1]/ul/li")
+                expired_items = self.driver.find_elements(
+                    By.XPATH, "/html/body/main/section/section/div[2]/div/div/div/section[2]/ul/li")
+                unlisted_items = self.driver.find_elements(
+                    By.XPATH, "/html/body/main/section/section/div[2]/div/div/div/section[3]/ul/li")
+                currently_listed = self.driver.find_elements(
+                    By.XPATH, "/html/body/main/section/section/div[2]/div/div/div/section[4]/ul/li")            
 
-                playerdata = []
-                playernumber = 1
-
-                players_sold = 0
-                players_currently_listed = 0
-                players_unlisted = 0
-                players_expired = 0
-
-                for card in players_on_page:
-                    bidstatus = str(card.get_attribute("class"))
-                    cardinfo = card.text.splitlines()
-
-                    if ("won" in bidstatus):
-                        players_sold += 1
-                    elif (bidstatus == "listFUTItem has-auction-data"):
-                        players_currently_listed += 1
-                    elif (bidstatus == "listFUTItem"):
-                        players_unlisted += 1
-                    elif ("expired" in bidstatus):
-                        players_expired += 1
-
-                return players_expired, players_sold, players_currently_listed, players_unlisted
+                return len(expired_items), len(players_sold_items), len(currently_listed), len(unlisted_items)
             except:
                 infiniteloopcounter += 1
                 print("err getTLsum")

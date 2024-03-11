@@ -18,7 +18,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support import ui
 from selenium.webdriver.support.wait import WebDriverWait
 import undetected_chromedriver as uc
-
+import traceback
 
 def log_event(queue, event, bidroundOver=False):
     """
@@ -97,7 +97,7 @@ def create_driver():
         path = os.getcwd() + '\chrome_windows\chromedriver.exe'
 
     # Shoutout to the dev who created this
-    use_undetected_chromedriver = True
+    use_undetected_chromedriver = True 
     if use_undetected_chromedriver:
         options = uc.ChromeOptions()
 
@@ -105,7 +105,8 @@ def create_driver():
         options.add_argument('--disable-popup-blocking')  # allow for new tab
         # options.add_extension("adblocker/uBlock-Origin.crx")
 
-        driver = uc.Chrome(options=options)
+        driver = uc.Chrome(options=options, headless=False, use_subprocess=True)
+        #driver = uc.Chrome(options=options)
         return driver
 
     else:
@@ -132,7 +133,7 @@ def create_driver():
 def setup_adblock(driver):
     driver.execute_script(
         "alert('Install Adblocker after accepting this prompt. Without Adblocker, FUTBIN fetch will break (way too many advertisements). After 10 seconds, bot will automatically go to Webapp. ');")
-
+    original = driver.window_handles[0]
     alert_present = True
     while alert_present:
         try:
@@ -145,48 +146,90 @@ def setup_adblock(driver):
             try:
                 driver.get(
                     "https://chrome.google.com/webstore/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm?hl=en")
+                print(driver.title)
+                print(driver.window_handles)
+                print(driver.current_window_handle)
+                print(original)
+                original = driver.current_window_handle
                 WebDriverWait(driver, 10).until(EC.visibility_of_element_located(
-                    (By.XPATH, "/html/body/div[5]/div[2]/div/div/div[2]/div[2]/div/div/div/div")))
+                    (By.XPATH, "/html/body/c-wiz/div/div/main/div/section[1]/section/div[2]/div")))
+            
                 WebDriverWait(driver, 20).until(EC.element_to_be_clickable(
-                    (By.XPATH, "/html/body/div[5]/div[2]/div/div/div[2]/div[2]/div/div/div/div"))).click()
+                     (By.XPATH, "/html/body/c-wiz/div/div/main/div/section[1]/section/div[2]/div"))).click()
 
             except Exception as e:
-                # print("User broke futbin fetch, self.botRunning false")
                 print("Issue installing adblocker, please install manually")
+                traceback.print_exc()
                 driver.switch_to.window(driver.window_handles[0])
 
-            driver.switch_to.window(driver.window_handles[0])
+            
+            driver.switch_to.window(original)
+    print("handles")
+    print(driver.window_handles)   
+    print("current title and handle")
+    print(driver.title)
+    print(driver.current_window_handle)
+    title = driver.title
+    
+    
+   
+    # get windows
+    open_windows = driver.window_handles
 
-    sleep(14)
-    # installing = True
-    # infiniteCounter = 0
-    # while installing:
-    #     try:
-    #         elements = "/html/body/div[3]/div[2]/div/div/div[2]"
-    #         page_content = driver.find_elements(By.XPATH, elements)
-
-    #         for elem in page_content:
-    #             text = str(elem.text)
-    #             text = text.strip()
-    #             # print(text)
-    #             lowered = text.lower()
-    #             if (text == "Remove from Chrome"):
-    #                 installing = False
-
-    #             if (lowered == "remove from chrome"):
-    #                 installing = False
-
-    #             if "remove" in lowered:
-    #                 installing = False
-    #                 break
-
-    #     except:
-    #         infiniteCounter += 1
-    #         if infiniteCounter > 10:
-    #             print("Issue installing adblocker, restart bot")
-    #             break
-
+    for w in open_windows:
+        driver.switch_to.window(w)
+        if title != driver.title:
+            driver.close()
+    print("after closing")
+    print("handles")
+    print(driver.window_handles)   
+    print("current title and handle")
+    print(driver.title)
+    print(driver.current_window_handle)
+        #
+    # driver.switch_to.default_content()
+    # print("defaulte content title and handle")
+    # print(driver.title)
+    # print(driver.current_window_handle)
+    # driver.switch_to.parent_frame()
+    # print("parent frame content title and handle")
+    # print(driver.title)
+    # print(driver.current_window_handle)
+    sleep(10)
+    print("done sleeping")
+    print("Openning webapp")
     driver.get("https://www.ea.com/fifa/ultimate-team/web-app/")
+    
+    print("called Openning webapp")
+    sleep(5)
+    # installing = True
+#     infiniteCounter = 0
+#     while installing:
+#         try:
+#             elements = "/html/body/div[3]/div[2]/div/div/div[2]"
+#             page_content = driver.find_elements(By.XPATH, elements)
+#
+#             for elem in page_content:
+#                 text = str(elem.text)
+#                 text = text.strip()
+#                 # print(text)
+#                 lowered = text.lower()
+#                 if (text == "Remove from Chrome"):
+#                     installing = False
+#
+#                 if (lowered == "remove from chrome"):
+#                     installing = False
+#
+#                 if "remove" in lowered:
+#                     installing = False
+#                     break
+#
+#         except:
+#             infiniteCounter += 1
+#             if infiniteCounter > 10:
+#                 print("Issue installing adblocker, restart bot")
+#                 break
+    
 
 
 def login(queue, driver, user):
